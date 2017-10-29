@@ -1,0 +1,68 @@
+
+RSA / DSA / ECDSA
+
+/*************************** Building a Trust Store **************************/
+https://mxr.mozilla.org/mozilla/source/security/nss/lib/ckfw/builtins/certdata.txt
+http://curl.haxx.se/docs/caextract.html
+https://raw.github.com/bagder/curl/master/lib/mk-ca-bundle.pl
+
+
+/******************************** Key Generation *****************************/
+% openssl genrsa -aes128 -out fd.key 2048
+% openssl rsa -text -noout -in fd.key
+
+% openssl rsa -in fd.key -pubout -out fd-public.key
+
+% openssl dsaparam -genkey 2048 | openssl dsa -aes128 -out dsa.key
+
+% openssl ecparam -list_curves
+% openssl ecparam -genkey -name prime256v1 | openssl ec -aes128 -out ec.key
+
+
+/************** Creating Certificate Signing Requests ************************/
+% openssl req -new -key fd.key -out fd.csr
+% openssl req -noout -text -in fd.csr
+
+# Creating CSRs from Existing Certificates
+% openssl x509 -x509toreq -in fd.crt -signkey fd.key -out fd.csr
+
+# Unattended CSR Generation
+openssl req -new -config fd.cnf -key fd.key -out fd.csr
+
+
+/********************* Signing Your Own Certificates ************************/
+% openssl x509 -req -days 365 -in fd.csr -signkey fd.key -out fd.crt
+% openssl req -new -x509 -days 365 -key fd.key -config fd.cnf -out fd.crt
+
+# Creating Certificates Valid for Multiple Hostnames
+% openssl x509 -req -days 365 -in fd.csr -signkey fd.key -extfile fd.ext -out fd.crt
+% openssl x509 -noout -text -in fd.crt
+
+
+/********************* Key and Certificate Conversion************************/
+Binary (DER) certificate <using DER ASN.1 encoding>
+ASCII (PEM) certificate(s)
+Binary (DER) key <using DER ASN.1 encoding>
+ASCII (PEM) key
+PKCS#7 certificate(s)
+    With .p7b and .p7c extensions
+    Can include the entire certificate chain as needed
+    This format is supported by Java’s keytool utility
+PKCS#12 (PFX) key and certificate(s)
+    With .p12 and .pfx extensions
+    A protected server key with the corresponding certificate as well as the intermediate certificates
+    This format is commonly used in Microsoft products
+
+# PEM and DER Conversion
+% openssl x509/rsa/dsa -inform PEM -in fd.pem -outform DER -out fd.der
+% openssl x509/rsa/dsa -inform DER -in fd.der -outform PEM -out fd.pem
+
+# PKCS#12 (PFX) Conversion
+% openssl pkcs12 -export -out fd.pfx -inkey fd.key -in fd.crt -certfile fd-chain.crt
+% openssl pkcs12 -nodes -in fd.pfx -out fd.pem
+
+% openssl pkcs12 -in fd.pfx -nocerts -nodes -out fd.key
+% openssl pkcs12 -in fd.pfx -nokeys -clcerts -out fd.crt
+% openssl pkcs12 -in fd.pfx -nokeys -cacerts -out fd-chain.crt
+
+
